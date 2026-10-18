@@ -35,21 +35,34 @@ const UI = {
     const d = ensureDaily();
     const sub = $('#daily-sub'), btn = $('#btn-daily');
     btn.classList.toggle('done', d.cleared);
-    sub.textContent = d.cleared ? `✅ ${todayLabel()} 已通关 · 可再挑战` : `${todayLabel()} · 全服同一局${d.tries ? ` · 已挑战 ${d.tries} 次` : ' · 通关必得稀有羊'}`;
+    const dd = difficultyOf(DAILY_LEVEL, 'daily');
+    sub.textContent = d.cleared ? `✅ ${todayLabel()} 已通关 · 可再挑战` : `${todayLabel()} · 全服同局 · 难度 ${dd.score}${d.tries ? ` · 已挑战 ${d.tries} 次` : ''}`;
     const n = save.sheep.length;
     const badge = $('#pen-badge'); badge.textContent = n; badge.classList.toggle('on', n > 0);
-    $('#stats').textContent = `羊圈 ${n} 只 · 通关 ${save.wins} 次 · 挑战 ${save.tries} 次`;
+    $('#tb-flock').textContent = n;
+    $('#tb-best').textContent = Math.max(1, save.unlocked - 1);
+    $('#stats').textContent = `通关 ${save.wins} 次 · 挑战 ${save.tries} 次`;
     $('#btn-sound').textContent = save.sound ? '🔊' : '🔇';
-    $('#btn-start').textContent = save.unlocked >= 2 ? `继续闯关 · 第 ${Math.min(save.unlocked, 30)} 关` : '开始游戏';
+    const lv = save.unlocked;
+    $('#btn-start').textContent = lv >= 2 ? `继续闯关 · 第 ${lv} 关` : '开始闯关';
+    // 当前关卡难度卡片
+    const D = difficultyOf(lv), c = levelConfig(lv);
+    const card = $('#menu-card'); card.style.setProperty('--c', D.tier.color);
+    $('#mc-level').innerHTML = `第 ${lv} 关<small>${lv <= 10 ? '难度跃升期' : '无尽深渊'}</small>`;
+    setChip($('#mc-chip'), D);
+    setMeter($('#mc-meter'), D);
+    $('#mc-score').innerHTML = `${D.score}<small>/100</small>`;
+    $('#mc-score').style.setProperty('--c', D.tier.color);
+    $('#mc-meta').innerHTML = `<div><b>${tilesOf(lv)}</b>张牌</div><div><b>${c.types}</b>种图案</div><div><b>${c.layers || 3}</b>层</div><div><b>${passStr(D.casual)}</b>预估通关</div>`;
     // 首页羊群：展示最新的几只
     const flock = $('#menu-flock'); flock.innerHTML = '';
     const show = save.sheep.slice(-6).reverse();
-    const slots = [[8, 0.62], [76, 0.66], [22, 0.5], [62, 0.52], [0, 0.42], [86, 0.44]];
+    const slots = [[6, 0.62], [74, 0.66], [20, 0.5], [60, 0.52], [-2, 0.42], [86, 0.44]];
     show.forEach((v, i) => {
       const e = document.createElement('div'); e.className = 'mini-sheep';
       const [left, sc] = slots[i];
-      e.style.left = `${left}%`; e.style.bottom = `${(1 - sc) * 60}px`;
-      e.style.width = e.style.height = `${Math.round(78 * sc + 20)}px`;
+      e.style.left = `${left}%`; e.style.bottom = `${(1 - sc) * 50}px`;
+      e.style.width = e.style.height = `${Math.round(74 * sc + 18)}px`;
       e.style.setProperty('--f', left > 50 ? -1 : 1);
       e.style.animationDelay = `${-i * 0.5}s`; e.style.zIndex = Math.round(sc * 10);
       e.innerHTML = sheepSVG({ v });
@@ -61,6 +74,8 @@ const UI = {
     if (G.state !== 'playing' || G.replay) return;
     G.state = 'paused';
     $('#btn-sound2').textContent = `声音：${save.sound ? '开' : '关'}`;
+    $('#pause-diff').innerHTML = diffBoxHTML(G.diff, G.cfg, G.total);
+    paintDiffBox($('#pause-diff'), G.diff);
     this.show('#pause');
   },
   resume() { this.hide('#pause'); G.state = 'playing'; },
@@ -71,10 +86,18 @@ const UI = {
     const remain = G.tiles.filter((t) => t.status !== 'gone').length;
     const pct = Math.floor((1 - remain / G.total) * 100);
     if (G.mode === 'daily') { const d = ensureDaily(); d.best = Math.max(d.best || 0, pct); persist(); }
-    const quip = G.level >= 2
-      ? (pct >= 80 ? '就差最后几步！这局一定有解～' : pct >= 50 ? '已经过半了，换个顺序试试？' : '据说只有 0.1% 的人能通过第二关…')
-      : '再试一次，很简单的！';
-    $('#fail-text').innerHTML = `已完成 <b>${pct}%</b>，还剩 <b>${remain}</b> 张牌<br>${quip}`;
+    const D = G.diff;
+    const quip = G.level <= 1 && G.mode === 'level' ? '再试一次，很简单的！'
+      : pct >= 85 ? '就差最后几步！这局一定有解～'
+      : pct >= 55 ? '已经过半了，换个拿牌顺序试试？'
+      : `这关只有约 ${passStr(D.casual)} 的玩家能通过…`;
+    const R = 50, C = 2 * Math.PI * R;
+    $('#fail-ring').innerHTML = `<svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="${R}" fill="none" stroke="#f1e9d2" stroke-width="10"/>
+      <circle cx="60" cy="60" r="${R}" fill="none" stroke="url(#fg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" id="fail-arc"/>
+      <defs><linearGradient id="fg"><stop offset="0" stop-color="#ffb347"/><stop offset="1" stop-color="#ff5e4d"/></linearGradient></defs></svg>
+      <div class="lbl"><b>${pct}%</b><small>完成度</small></div>`;
+    setTimeout(() => { const a = $('#fail-arc'); if (a) { a.style.transition = 'stroke-dashoffset 1s cubic-bezier(.2,.9,.3,1)'; a.style.strokeDashoffset = C * (1 - pct / 100); } }, 60);
+    $('#fail-text').innerHTML = `还剩 <b>${remain}</b> 张牌 · 本关难度 <b style="color:${D.tier.color}">${D.score}</b>（${D.tier.name}）<br>${quip}`;
     const rb = $('#btn-revive');
     rb.disabled = G.revive <= 0;
     rb.textContent = G.revive > 0 ? '复活一次（移出 3 张）' : '复活机会已用完';
@@ -94,8 +117,8 @@ const UI = {
       const d = ensureDaily();
       if (!d.cleared) { d.cleared = true; reward = rollSheep('daily'); } else note = '今日挑战奖励已领取';
     } else if (G.level === 1) {
-      if (!save.lambDate) { save.lambDate = today(); reward = rollSheep('lamb'); } else note = '新手奖励已领取，去第 2 关领养更多小羊吧';
-    } else reward = rollSheep('level');
+      if (!save.lambDate) { save.lambDate = today(); reward = rollSheep('lamb'); } else note = '新手奖励已领取，继续闯关领养更多小羊吧';
+    } else reward = rollSheep(G.level >= 10 ? 'daily' : 'level');
     if (reward) { save.sheep.push(reward); save.flock++; }
     persist();
     G.reward = reward;
@@ -103,46 +126,65 @@ const UI = {
     $('#win-title').textContent = reward ? '加入羊群！' : '恭喜通关！';
     const rv = $('#reveal'); rv.classList.remove('on');
     const rs = $('#reveal-sheep');
-    rv.querySelectorAll('.egg').forEach((e) => e.remove());
     if (reward) {
       rs.innerHTML = sheepSVG({ v: reward });
-      const egg = document.createElement('div'); egg.className = 'egg'; egg.textContent = '🥚'; rv.appendChild(egg);
       const R = RARITY[reward.rar];
-      rv.style.setProperty('--rc', reward.rar === 'legend' ? 'rgba(255,170,60,.65)' : reward.rar === 'epic' ? 'rgba(190,140,255,.55)' : 'rgba(255,215,90,.55)');
+      rv.style.setProperty('--rc', reward.rar === 'legend' ? 'rgba(255,170,60,.7)' : reward.rar === 'epic' ? 'rgba(190,140,255,.6)' : reward.rar === 'rare' ? 'rgba(110,190,255,.55)' : 'rgba(255,215,90,.55)');
       $('#reveal-info').innerHTML = `<span class="rar-badge" style="background:${R.color}">${R.name}</span><span class="rar-stars">${starStr(reward.rar)}</span>
         <div class="reveal-name">「${reward.name}」· ${sheepDesc(reward)}</div>`;
-      setTimeout(() => { rv.classList.add('on'); Sound.reveal(R.stars); Sound.baa(1 + (R.stars - 1) * 0.06); Native.vib(40); }, 900);
+      setTimeout(() => { rv.classList.add('on'); Sound.reveal(R.stars); Sound.baa(1 + (R.stars - 1) * 0.06); Native.vib(40); }, 700);
     } else {
       rs.innerHTML = sheepSVG({ v: {} });
       rv.style.setProperty('--rc', 'rgba(255,215,90,.45)');
       $('#reveal-info').innerHTML = `<div class="reveal-name">${note}</div>`;
       setTimeout(() => { rv.classList.add('on'); Sound.baa(); }, 300);
     }
+    const D = G.diff;
     const name = G.mode === 'daily' ? '今日挑战' : G.cfg.name;
-    $('#win-text').innerHTML = `<div class="win-stats"><div><b>${fmtTime(secs)}</b>用时</div><div><b>${G.propsUsed + (1 - G.revive)}</b>道具/复活</div><div><b>${G.maxCombo}</b>最高连消</div></div>`
-      + (G.level === 1 && G.mode === 'level' ? '<div style="margin-top:8px">热身完毕～第 2 关才是真正的挑战！</div>' : '');
-    $('#btn-next').textContent = G.mode === 'daily' ? `继续闯关 · 第 ${Math.min(save.unlocked, 30)} 关` : `挑战第 ${G.level + 1} 关`;
-    G.shareText = `我在「羊了个羊·复刻」通过了${name}！用时 ${fmtTime(secs)}，最高连消 ×${G.maxCombo}${reward ? `，还领养了一只${RARITY[reward.rar].name}小羊「${reward.name}」` : ''}。关卡码 ${G.code}，敢来挑战同一局吗？`;
+    $('#win-stats').innerHTML = `<div><b>${fmtTime(secs)}</b>用时</div><div><b>${G.propsUsed + (1 - G.revive)}</b>道具/复活</div><div><b>×${G.maxCombo}</b>最高连消</div><div><b style="color:${D.tier.color}">${D.score}</b>难度</div>`;
+    const beat = Math.min(99.99, 100 - D.casual);
+    $('#win-beat').innerHTML = G.level <= 1 && G.mode === 'level' ? '热身完毕～后面每一关都会<b>大幅变难</b>！'
+      : `预估只有 <b>${passStr(D.casual)}</b> 的玩家能过这关，你击败了 <b>${beat >= 99.9 ? beat.toFixed(2) : beat.toFixed(1)}%</b> 的玩家`;
+    const nx = difficultyOf(G.level + 1);
+    $('#win-text').innerHTML = G.mode === 'level'
+      ? `下一关难度 <b style="color:${nx.tier.color}">${nx.score}</b>（${nx.tier.name}，<b>+${nx.delta}</b>）` : '';
+    $('#btn-next').textContent = G.mode === 'daily' ? `继续闯关 · 第 ${save.unlocked} 关` : `挑战第 ${G.level + 1} 关`;
+    G.shareText = `我在「羊了个羊·无尽复刻」通过了${name}（难度 ${D.score}·${D.tier.name}）！用时 ${fmtTime(secs)}，击败 ${beat.toFixed(1)}% 的玩家${reward ? `，还领养了一只${RARITY[reward.rar].name}小羊「${reward.name}」` : ''}。关卡码 ${G.code}，敢来挑战同一局吗？`;
     this.show('#win');
   },
 
   openLevels() {
-    const grid = $('#level-grid'); grid.innerHTML = '';
-    const max = Math.min(30, Math.max(12, save.unlocked + 2));
+    const list = $('#level-grid'); list.innerHTML = '';
+    const cur = save.unlocked;
+    const max = Math.max(20, cur + 8);
+    const best = Math.max(1, cur - 1);
+    const bd = difficultyOf(best);
+    $('#lv-summary').innerHTML = `<div><b>${best}</b>最高通关</div><div><b style="color:${bd.tier.color}">${bd.score}</b>最高难度</div><div><b>${bd.tier.name}</b>当前段位</div>`;
+    let lastTier = -1;
     for (let i = 1; i <= max; i++) {
-      const cfg = levelConfig(i);
+      const D = difficultyOf(i), c = levelConfig(i);
+      if (i === 1) list.insertAdjacentHTML('beforeend', '<div class="lv-sep">📈 跃升期 · 第 1-10 关每关大幅加难</div>');
+      if (i === 11) list.insertAdjacentHTML('beforeend', '<div class="lv-sep">♾️ 无尽期 · 每关小幅递增</div>');
+      lastTier = D.tierIdx;
+      const locked = i > cur;
       const b = document.createElement('button');
-      const locked = i > save.unlocked;
-      b.className = 'level-cell' + (i >= 2 ? ' hard' : '') + (locked ? ' locked' : '');
-      b.innerHTML = `${locked ? '🔒' : i}<small>${cfg.tag}</small>`;
+      b.className = 'lv-row' + (i < cur ? ' done' : '') + (i === cur ? ' cur' : '') + (locked ? ' locked' : '');
+      b.style.setProperty('--c', D.tier.color);
+      b.innerHTML = `<div class="num">${locked ? '🔒' : i}</div>
+        <div class="info"><div class="t1">第 ${i} 关<span class="tier">${D.tier.name}</span><span class="stars">${starHTML(D.tier.stars)}</span></div>
+        <div class="t2">${tilesOf(i)} 张 · ${c.types} 种 · ${c.layers || 3} 层${c.pile ? ` · 盲堆 ${c.pile * 2}` : ''}${c.blind ? ` · 盲牌 ${Math.round(c.blind * 100)}%` : ''}</div>
+        <div class="bar"><i style="width:${D.score}%"></i></div></div>
+        <div class="score"><b>${D.score}</b><small>${i > 1 ? `+${D.delta}` : '起点'}</small></div>`;
       b.onclick = () => {
         if (locked) { toast('先通过前一关才能解锁哦'); return; }
         Sound.init(); startGame({ level: i });
       };
-      grid.appendChild(b);
+      list.appendChild(b);
     }
     this.show('#levels');
+    setTimeout(() => { const e = list.querySelector('.cur'); if (e) e.scrollIntoView({ block: 'center' }); }, 30);
   },
+
   openCode() {
     const inp = $('#code-input'); inp.value = ''; inp.classList.remove('err');
     this.show('#code');
@@ -158,11 +200,42 @@ const UI = {
   },
 };
 
+/* ---------------- 难度组件 ---------------- */
+function setChip(e, D) {
+  e.style.setProperty('--c', D.tier.color);
+  e.innerHTML = `<span class="sk">${starHTML(D.tier.stars)}</span>${D.tier.name}`;
+}
+function setMeter(e, D) {
+  e.innerHTML = `<i style="width:0%"></i><em style="left:0%"></em>`;
+  e.style.setProperty('--c', D.tier.color);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const w = clamp(D.score, 2, 100);
+    e.querySelector('i').style.width = w + '%';
+    e.querySelector('em').style.left = w + '%';
+  }));
+}
+function diffBoxHTML(D, c, total) {
+  const facts = [
+    ['牌数', `${total || tilesOf(D.n)} 张`],
+    ['图案', `${c.types} 种`],
+    ['层数', `${c.layers || 3} 层`],
+    ['盲牌堆', c.pile ? `${c.pile * 2} 张` : '无'],
+    ['牌面盲牌', c.blind ? `${Math.round(c.blind * 100)}%` : '无'],
+    ['交错度', `${c.hold || 1}/5`],
+  ];
+  return `<div class="db-head"><div class="db-score" style="--c:${D.tier.color}">${D.score}<small>难度指数</small></div>
+    <div class="db-right"><div class="diff-chip" style="--c:${D.tier.color}"><span class="sk">${starHTML(D.tier.stars)}</span>${D.tier.name}</div>
+    <div class="diff-meter wrap" style="--c:${D.tier.color}"><i style="left:${clamp(D.score, 2, 100)}%"></i><em style="left:${clamp(D.score, 2, 100)}%"></em></div>
+    <div class="db-pass">预估通关率 <b>${passStr(D.casual)}</b> · 高手 <b>${passStr(D.pass)}</b></div></div></div>
+    <div class="diff-facts">${facts.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>`;
+}
+function paintDiffBox() {}
+
 /* ---------------- 事件绑定 ---------------- */
 function bind(sel, fn) { const e = $(sel); if (e) e.addEventListener('click', (ev) => { Sound.init(); fn(ev); }); }
 
-bind('#btn-start', () => { Sound.baa(); startGame({ level: Math.min(save.unlocked, 30) }); });
-bind('#btn-daily', () => { Sound.baa(1.08); startGame({ level: 2, mode: 'daily', seed: dailySeed() }); });
+bind('#btn-start', () => { Sound.baa(); startGame({ level: save.unlocked }); });
+bind('#btn-daily', () => { Sound.baa(1.08); startGame({ level: DAILY_LEVEL, mode: 'daily', seed: dailySeed() }); });
 bind('#btn-levels', () => UI.openLevels());
 bind('#btn-code', () => UI.openCode());
 bind('#btn-pen', () => Pen.open());
@@ -177,7 +250,7 @@ bind('#btn-restart', () => startGame({ level: G.level, seed: G.seed, mode: G.mod
 bind('#btn-retry', () => startGame({ level: G.level, seed: G.seed, mode: G.mode }));
 bind('#btn-newgame', () => startGame({ level: G.level }));
 ['#btn-home', '#btn-home2', '#btn-home3', '#btn-home4'].forEach((s) => bind(s, () => UI.goMenu()));
-bind('#btn-next', () => startGame({ level: G.mode === 'daily' ? Math.min(save.unlocked, 30) : Math.min(G.level + 1, 30) }));
+bind('#btn-next', () => startGame({ level: G.mode === 'daily' ? save.unlocked : G.level + 1 }));
 bind('#btn-share-win', () => { Native.share(G.shareText || ''); toast('战绩已复制，快去分享吧'); });
 $$('[data-copy]').forEach((b) => b.addEventListener('click', () => { Native.copy(G.code); toast(`已复制关卡码 ${G.code}`); }));
 $$('[data-share]').forEach((b) => b.addEventListener('click', () => {

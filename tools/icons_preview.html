@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;background:#9fd96f}canvas{display:block}</style></head><body>
+<canvas id="c"></canvas>
+<script src="core.js"></script><script src="icons.js"></script>
+<script>
+const c = document.getElementById('c'), D = 2, W = 393, cols = 5, S = 70, gap = 8;
+const rows = Math.ceil(ICON_COUNT / cols);
+c.width = W * D; c.height = (rows * (S + gap + 14) + 20) * D; c.style.width = W + 'px';
+const g = c.getContext('2d'); g.scale(D, D);
+for (let i = 0; i < ICON_COUNT; i++) {
+  const x = 10 + (i % cols) * (S + gap), y = 10 + Math.floor(i / cols) * (S + gap + 14);
+  rr(g, x, y, S, S, 12); g.fillStyle = '#fffbea'; g.fill();
+  drawIcon(g, i, x + S * 0.12, y + S * 0.12, S * 0.76);
+  g.fillStyle = '#234'; g.font = '11px sans-serif'; g.textAlign = 'center'; g.fillText(ICON_DEFS[i].name, x + S / 2, y + S + 11);
+}
+</script></body></html>

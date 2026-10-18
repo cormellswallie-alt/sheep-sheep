@@ -16,33 +16,57 @@
   <div class="clouds"><i></i><i></i><i></i><i></i></div>
   <div class="hills"><b class="h1"></b><b class="h2"></b><b class="h3"></b></div>
   <div class="meadow-flowers"></div>
+
+  <div class="topbar">
+    <div class="pill"><i>🐑</i><b id="tb-flock">0</b><small>只</small></div>
+    <div class="pill"><i>🏆</i><b id="tb-best">1</b><small>最高关</small></div>
+    <div class="grow"></div>
+    <button class="round-btn" id="btn-sound" aria-label="声音">🔊</button>
+  </div>
+
   <div class="title-wrap">
     <div class="title"><span>羊</span><span>了</span><span>个</span><span>羊</span></div>
-    <div class="subtitle">复 刻 版</div>
+    <div class="subtitle">无 尽 复 刻 版</div>
   </div>
   <div class="sheep-stage">
     <div class="menu-flock" id="menu-flock"></div>
     <div class="sheep bob hero" data-sheep></div>
   </div>
+
+  <div class="menu-card" id="menu-card">
+    <div class="mc-head">
+      <div class="mc-level" id="mc-level">第 1 关<small>无尽闯关</small></div>
+      <div class="grow"></div>
+      <div class="diff-chip" id="mc-chip"><span class="sk">★</span><span>入门</span></div>
+    </div>
+    <div class="diff-box flat">
+      <div class="row">
+        <span class="lab">难度指数</span>
+        <div class="grow"><div class="diff-meter wrap" id="mc-meter"><i></i><em></em></div></div>
+        <div class="diff-score" id="mc-score">0<small>/100</small></div>
+      </div>
+    </div>
+    <div class="mc-meta" id="mc-meta"></div>
+  </div>
+
   <div class="menu-btns">
-    <button class="btn btn-green big" id="btn-start">开始游戏</button>
+    <button class="btn big" id="btn-start">开始闯关</button>
     <button class="btn btn-orange daily" id="btn-daily">
       <span class="daily-main">🏆 今日挑战</span><small id="daily-sub"></small>
     </button>
     <div class="mini-row">
       <button class="mini" id="btn-pen"><i>🐑</i><span>羊圈</span><em id="pen-badge"></em></button>
-      <button class="mini" id="btn-levels"><i>🗺️</i><span>关卡</span></button>
+      <button class="mini" id="btn-levels"><i>📈</i><span>难度曲线</span></button>
       <button class="mini" id="btn-code"><i>🔑</i><span>关卡码</span></button>
     </div>
   </div>
   <div class="stats" id="stats"></div>
-  <button class="icon-btn sound-btn" id="btn-sound" aria-label="声音">🔊</button>
 </div>
 
 <!-- ============ 羊圈 ============ -->
 <div id="pen" class="screen pen">
   <div class="pen-head">
-    <button class="icon-btn pen-back" id="pen-back">‹</button>
+    <button class="round-btn pen-back" id="pen-back">‹</button>
     <div class="pen-title">我的羊圈</div>
     <div class="pen-count" id="pen-count"></div>
   </div>
@@ -60,30 +84,35 @@
 
 <!-- ============ 弹窗 ============ -->
 <div id="levels" class="modal">
-  <div class="panel">
-    <div class="panel-title">选择关卡</div>
-    <div class="level-grid" id="level-grid"></div>
-    <button class="btn btn-gray" data-close>返回</button>
+  <div class="panel levels-panel">
+    <button class="panel-x" data-close>×</button>
+    <div class="panel-title">难度曲线</div>
+    <div class="lv-summary" id="lv-summary"></div>
+    <div class="level-list" id="level-grid"></div>
+    <div class="diff-note">难度指数由两种 AI 每关各模拟 60 局拟合：<b>前 10 关大幅跃升</b>，之后<b>每关小幅递增</b>，无尽延续。</div>
   </div>
 </div>
 
 <div id="code" class="modal top">
   <div class="panel">
+    <button class="panel-x" data-close>×</button>
     <div class="panel-title">输入关卡码</div>
     <div class="panel-text">和朋友输入同一个关卡码，<br>就能玩到一模一样的牌局</div>
-    <input id="code-input" class="code-input" maxlength="12" placeholder="例如 2-K7Q3MZ" autocomplete="off" autocapitalize="characters" spellcheck="false">
-    <button class="btn btn-green" id="btn-code-go">开始挑战</button>
-    <button class="btn btn-gray" data-close>取消</button>
+    <input id="code-input" class="code-input" maxlength="12" placeholder="例如 12-K7Q3MZ" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="btn" id="btn-code-go">开始挑战</button>
   </div>
 </div>
 
 <div id="pause" class="modal">
   <div class="panel">
     <div class="panel-title">暂停</div>
+    <div class="diff-box" id="pause-diff"></div>
     <div class="code-row"><span>关卡码</span><b class="code-val"></b><button class="chip" data-copy>复制</button><button class="chip" data-share>分享</button></div>
-    <button class="btn btn-green" id="btn-resume">继续游戏</button>
-    <button class="btn btn-blue" id="btn-restart">重试本局</button>
-    <button class="btn btn-blue" id="btn-sound2">声音：开</button>
+    <button class="btn" id="btn-resume">继续游戏</button>
+    <div class="btn-row">
+      <button class="btn btn-blue small" id="btn-restart">重试本局</button>
+      <button class="btn btn-blue small" id="btn-sound2">声音：开</button>
+    </div>
     <button class="btn btn-gray" id="btn-home">返回首页</button>
   </div>
 </div>
@@ -91,15 +120,15 @@
 <div id="fail" class="modal">
   <div class="panel">
     <div class="panel-title red">槽位已满！</div>
-    <div class="sheep sad" data-sheep="sad"></div>
+    <div class="fail-ring" id="fail-ring"></div>
     <div class="panel-text" id="fail-text"></div>
-    <button class="btn btn-green" id="btn-revive">复活一次（移出 3 张）</button>
+    <button class="btn" id="btn-revive">复活一次（移出 3 张）</button>
     <button class="btn btn-purple" id="btn-solution">🎬 看看正解</button>
-    <button class="btn btn-blue" id="btn-retry">重试本局</button>
     <div class="btn-row">
+      <button class="btn btn-blue small" id="btn-retry">重试本局</button>
       <button class="btn btn-gray small" id="btn-newgame">换一局</button>
-      <button class="btn btn-gray small" id="btn-home2">返回首页</button>
     </div>
+    <button class="btn btn-gray small" id="btn-home2">返回首页</button>
     <div class="code-row"><span>关卡码</span><b class="code-val"></b><button class="chip" data-copy>复制</button></div>
   </div>
 </div>
@@ -112,8 +141,10 @@
       <div class="reveal-sheep" id="reveal-sheep"></div>
     </div>
     <div class="reveal-info" id="reveal-info"></div>
+    <div class="win-stats" id="win-stats"></div>
+    <div class="beat" id="win-beat"></div>
     <div class="panel-text" id="win-text"></div>
-    <button class="btn btn-green" id="btn-next">下一关</button>
+    <button class="btn" id="btn-next">下一关</button>
     <div class="btn-row">
       <button class="btn btn-blue small" id="btn-share-win">分享战绩</button>
       <button class="btn btn-gray small" id="btn-home3">返回首页</button>
@@ -123,9 +154,9 @@
 
 <div id="replay-end" class="modal">
   <div class="panel">
-    <div class="panel-title">回放结束</div>
+    <div class="panel-title purple">回放结束</div>
     <div class="panel-text" id="replay-text">这就是这副牌的一条通关路线！<br>看过答案的牌局再通关不会获得小羊哦</div>
-    <button class="btn btn-green" id="btn-replay-retry">我来试试（同一局）</button>
+    <button class="btn" id="btn-replay-retry">我来试试（同一局）</button>
     <button class="btn btn-blue" id="btn-replay-again">再看一遍</button>
     <button class="btn btn-gray" id="btn-home4">返回首页</button>
   </div>
@@ -141,6 +172,7 @@
 <div id="toast"></div>
 
 <script src="core.js"></script>
+<script src="icons.js"></script>
 <script src="sheep.js"></script>
 <script src="level.js"></script>
 <script src="game.js"></script>

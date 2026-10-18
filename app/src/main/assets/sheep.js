@@ -33,75 +33,106 @@ const ACC_SVG = {
 };
 
 let svgUid = 0;
+/* 小羊建模：体积感羊毛（多层径向渐变绒球 + 底部环境光遮蔽 + 顶部轮廓光）、
+ * 带蹄的四肢、立体头部（面部渐变 + 鼻吻 + 高光大眼 + 内耳）、尾巴、地面接触阴影 */
 function sheepSVG(opt) {
   opt = opt || {};
   const v = opt.v || {};
   const sad = !!opt.sad;
   const id = 'sg' + (++svgUid);
-  let wool = v.wool || '#ffffff', stroke = '#e2dabd', defs = '';
-  if (v.special === 'rainbow') {
-    defs = `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3c1"/><stop offset=".25" stop-color="#ffd9a8"/>
-      <stop offset=".5" stop-color="#fff6a8"/><stop offset=".75" stop-color="#b9f5c8"/><stop offset="1" stop-color="#b5dcff"/></linearGradient>`;
-    wool = `url(#${id})`; stroke = '#e6cfe8';
-  } else if (v.special === 'gold') {
-    defs = `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4b0"/><stop offset=".55" stop-color="#ffd23f"/>
-      <stop offset="1" stop-color="#eaa800"/></linearGradient>`;
-    wool = `url(#${id})`; stroke = '#d99a00';
-  } else if (v.special === 'black') { wool = '#4a4a50'; stroke = '#2c2c31'; }
   const black = v.special === 'black';
-  const face = black ? '#f0e3d0' : '#3f3f3f';
-  const mouthC = black ? '#7a5240' : '#fff';
-  let puffs = '';
-  for (let k = 0; k < 12; k++) {
-    const a = k / 12 * Math.PI * 2;
-    puffs += `<circle cx="${(110 + 58 * Math.cos(a)).toFixed(1)}" cy="${(112 + 36 * Math.sin(a)).toFixed(1)}" r="24"/>`;
+  // 毛色：亮部 / 基色 / 暗部
+  let hi = '#ffffff', base = v.wool || '#ffffff', lo = null, edge = null;
+  if (v.special === 'gold') { hi = '#fff7c4'; base = '#ffd23f'; lo = '#d99000'; edge = '#b87700'; }
+  else if (black) { hi = '#7a7a86'; base = '#4a4a54'; lo = '#2a2a31'; edge = '#1f1f25'; }
+  else if (v.special === 'rainbow') { hi = '#ffffff'; base = '#fff0f6'; lo = '#d9c3ef'; edge = '#c9b0e6'; }
+  lo = lo || mixHex(base, '#b9a98a', 0.42);
+  edge = edge || mixHex(base, '#8f7f60', 0.45);
+  const face = black ? '#f3e6d3' : '#3d3a40', faceHi = black ? '#fff8ec' : '#5b5760', faceLo = black ? '#d6c3a6' : '#252328';
+  const legC = black ? '#2b2930' : '#3d3a40';
+  let defs = `
+  <radialGradient id="${id}w" cx=".38" cy=".3" r=".75"><stop offset="0" stop-color="${hi}"/><stop offset=".55" stop-color="${base}"/><stop offset="1" stop-color="${lo}"/></radialGradient>
+  <radialGradient id="${id}b" cx=".42" cy=".28" r=".85"><stop offset="0" stop-color="${hi}"/><stop offset=".6" stop-color="${base}"/><stop offset="1" stop-color="${lo}"/></radialGradient>
+  <radialGradient id="${id}f" cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="${faceHi}"/><stop offset=".7" stop-color="${face}"/><stop offset="1" stop-color="${faceLo}"/></radialGradient>
+  <linearGradient id="${id}l" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${legC}"/><stop offset=".45" stop-color="${mixHex(legC, '#ffffff', 0.18)}"/><stop offset="1" stop-color="${legC}"/></linearGradient>
+  <radialGradient id="${id}s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="rgba(30,50,10,.32)"/><stop offset="1" stop-color="rgba(30,50,10,0)"/></radialGradient>`;
+  if (v.special === 'rainbow') {
+    defs += `<linearGradient id="${id}r" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3c8"/><stop offset=".25" stop-color="#ffd7a1"/>
+      <stop offset=".5" stop-color="#fff3a0"/><stop offset=".75" stop-color="#b6f2c8"/><stop offset="1" stop-color="#aed6ff"/></linearGradient>`;
   }
-  // 羊毛卷纹理
-  const curls = [[96, 100], [124, 96], [146, 112], [108, 126], [134, 132], [84, 122]]
-    .map(([x, y]) => `<path d="M${x - 6} ${y} q6 -8 12 0" stroke="${stroke}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/>`).join('');
+  const W1 = `url(#${id}w)`;
+  // 身体绒球：外圈 14 个 + 内层 7 个，大小错落
+  const puffs = [], inner = [];
+  for (let k = 0; k < 14; k++) {
+    const a = k / 14 * Math.PI * 2 + 0.1;
+    const r = 21 + ((k * 7) % 5) * 1.6;
+    puffs.push([110 + 60 * Math.cos(a), 110 + 37 * Math.sin(a), r]);
+  }
+  [[92, 96, 24], [122, 92, 25], [148, 106, 22], [80, 116, 22], [108, 120, 26], [136, 124, 23], [112, 102, 24]].forEach((p) => inner.push(p));
+  const c = (p, extra) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${p[2].toFixed(1)}" ${extra || ''}/>`;
+  const rainbowTint = v.special === 'rainbow' ? `<ellipse cx="112" cy="110" rx="70" ry="44" fill="url(#${id}r)" opacity=".55" style="mix-blend-mode:multiply"/>` : '';
+  // 腿：带关节锥度 + 蹄
+  const leg = (x, y1, y2, back) => `<g opacity="${back ? 0.85 : 1}">
+      <path d="M${x - 5.5} ${y1} L${x - 4.5} ${y2 - 6} Q${x} ${y2 - 3} ${x + 4.5} ${y2 - 6} L${x + 5.5} ${y1} Z" fill="url(#${id}l)"/>
+      <rect x="${x - 6}" y="${y2 - 7}" width="12" height="8" rx="3.5" fill="${black ? '#141418' : '#1d1b20'}"/>
+      <rect x="${x - 4}" y="${y2 - 6}" width="4" height="2.2" rx="1" fill="rgba(255,255,255,.25)"/></g>`;
   const eyes = sad
-    ? `<path d="M-15 3 Q-9 -2 -3 3" stroke="${black ? '#333' : '#fff'}" stroke-width="3" fill="none" stroke-linecap="round"/>
-       <path d="M3 3 Q9 -2 15 3" stroke="${black ? '#333' : '#fff'}" stroke-width="3" fill="none" stroke-linecap="round"/>
-       <path d="M-12 9 q-3.5 6 0 8.5 q3.5 -2.5 0 -8.5z" fill="#7fd3ff"/>`
-    : (black
-      ? `<ellipse cx="-9" cy="3" rx="4" ry="5" fill="#1a1a1a"/><ellipse cx="9" cy="3" rx="4" ry="5" fill="#1a1a1a"/>
-         <circle cx="-7.6" cy="1.4" r="1.5" fill="#fff"/><circle cx="10.4" cy="1.4" r="1.5" fill="#fff"/>`
-      : `<ellipse cx="-9" cy="2" rx="6.5" ry="7.5" fill="#fff"/><ellipse cx="9" cy="2" rx="6.5" ry="7.5" fill="#fff"/>
-         <circle cx="-8" cy="4" r="3.8" fill="#151515"/><circle cx="10" cy="4" r="3.8" fill="#151515"/>
-         <circle cx="-6.6" cy="2.4" r="1.4" fill="#fff"/><circle cx="11.4" cy="2.4" r="1.4" fill="#fff"/>`);
+    ? `<path d="M-15 4 Q-9 -1 -3 4" stroke="${black ? '#3a2a20' : '#fff'}" stroke-width="3" fill="none" stroke-linecap="round"/>
+       <path d="M3 4 Q9 -1 15 4" stroke="${black ? '#3a2a20' : '#fff'}" stroke-width="3" fill="none" stroke-linecap="round"/>
+       <path d="M-12 10 q-3.5 6 0 8.5 q3.5 -2.5 0 -8.5z" fill="#8fd8ff"/>`
+    : `<g>
+        <ellipse cx="-9.5" cy="2" rx="7.2" ry="8.4" fill="#fff"/><ellipse cx="9.5" cy="2" rx="7.2" ry="8.4" fill="#fff"/>
+        <ellipse cx="-8.6" cy="3.6" rx="4.6" ry="5.4" fill="#2a1d14"/><ellipse cx="10.4" cy="3.6" rx="4.6" ry="5.4" fill="#2a1d14"/>
+        <ellipse cx="-8.6" cy="4.6" rx="2.6" ry="3" fill="#000"/><ellipse cx="10.4" cy="4.6" rx="2.6" ry="3" fill="#000"/>
+        <circle cx="-6.8" cy="1.2" r="2" fill="#fff"/><circle cx="12.2" cy="1.2" r="2" fill="#fff"/>
+        <circle cx="-10.2" cy="6.4" r=".9" fill="#fff" opacity=".8"/><circle cx="8.8" cy="6.4" r=".9" fill="#fff" opacity=".8"/>
+        <path d="M-15.5 -6 Q-10 -9.5 -4 -6.5" stroke="${black ? '#a58a6c' : '#1c1a1f'}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".7"/>
+        <path d="M15.5 -6 Q10 -9.5 4 -6.5" stroke="${black ? '#a58a6c' : '#1c1a1f'}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".7"/>
+      </g>`;
+  const muzzleC = black ? '#e7d4b8' : '#4d4950';
   const mouth = sad
-    ? `<path d="M-6 25 Q0 19 6 25" stroke="${mouthC}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`
-    : `<path d="M-6 20 Q0 26 6 20" stroke="${mouthC}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+    ? `<path d="M-5 26 Q0 21.5 5 26" stroke="${black ? '#7a5240' : '#f2e9ea'}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`
+    : `<path d="M-5.5 21.5 Q-2.6 25 0 22 Q2.6 25 5.5 21.5" stroke="${black ? '#7a5240' : '#f2e9ea'}" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   const acc = v.acc && ACC_SVG[v.acc] ? ACC_SVG[v.acc] : '';
   const sparkle = v.special === 'rainbow' || v.special === 'gold'
-    ? `<g fill="#fff" opacity=".95"><path d="M150 70 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z"/><path d="M60 150 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
-       <path d="M168 140 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></g>` : '';
+    ? `<g fill="#fff" class="sparkle"><path d="M150 66 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3z"/><path d="M56 150 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>
+       <path d="M170 142 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/></g>` : '';
   return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs>
-  <ellipse cx="106" cy="188" rx="66" ry="9" fill="rgba(0,0,0,.16)"/>
-  <g stroke="#3f3f3f" stroke-width="10" stroke-linecap="round" class="legs">
-    <line x1="76" y1="148" x2="74" y2="182"/><line x1="98" y1="152" x2="98" y2="184"/>
-    <line x1="122" y1="152" x2="122" y2="184"/><line x1="146" y1="148" x2="148" y2="182"/>
-  </g>
-  <g fill="${wool}" stroke="${stroke}" stroke-width="3">${puffs}</g>
-  <ellipse cx="110" cy="112" rx="60" ry="38" fill="${wool}"/>
-  ${curls}
-  <ellipse cx="96" cy="92" rx="26" ry="10" fill="#fff" opacity=".35"/>
-  <circle cx="172" cy="96" r="12" fill="${wool}" stroke="${stroke}" stroke-width="3"/>
+  <ellipse cx="110" cy="186" rx="74" ry="11" fill="url(#${id}s)"/>
+  <g class="legs">${leg(84, 140, 182, true)}${leg(140, 140, 182, true)}${leg(96, 146, 185)}${leg(126, 146, 185)}</g>
+  <g fill="${edge}">${puffs.map((p) => c([p[0], p[1] + 2.5, p[2] + 1.5])).join('')}</g>
+  <g fill="url(#${id}b)">${puffs.map((p) => c(p)).join('')}</g>
+  <ellipse cx="110" cy="110" rx="62" ry="38" fill="url(#${id}b)"/>
+  <g fill="${W1}">${inner.map((p) => c(p)).join('')}</g>
+  ${rainbowTint}
+  <ellipse cx="112" cy="136" rx="54" ry="12" fill="${lo}" opacity=".35"/>
+  <g fill="#fff" opacity=".55"><ellipse cx="92" cy="84" rx="16" ry="6"/><ellipse cx="124" cy="80" rx="12" ry="4.5"/><circle cx="72" cy="96" r="4"/></g>
+  <g transform="translate(174 98) rotate(15)"><circle r="12" fill="${edge}" cy="1.5"/><circle r="12" fill="${W1}"/><circle cx="-3" cy="-4" r="4" fill="#fff" opacity=".5"/></g>
   <g transform="translate(58 96)" class="head">
-    <ellipse cx="-26" cy="-6" rx="17" ry="8" fill="${face}" transform="rotate(-28 -26 -6)"/>
-    <ellipse cx="26" cy="-6" rx="17" ry="8" fill="${face}" transform="rotate(28 26 -6)"/>
-    <ellipse cx="-27" cy="-5" rx="9" ry="4" fill="#ff9fb0" transform="rotate(-28 -27 -5)"/>
-    <ellipse cx="27" cy="-5" rx="9" ry="4" fill="#ff9fb0" transform="rotate(28 27 -5)"/>
-    <ellipse cx="0" cy="8" rx="25" ry="31" fill="${face}"/>
-    <g fill="${wool}" stroke="${stroke}" stroke-width="2.5"><circle cx="-13" cy="-21" r="11"/><circle cx="13" cy="-21" r="11"/><circle cx="0" cy="-27" r="12"/></g>
+    <g transform="rotate(-30 -24 -6)"><ellipse cx="-26" cy="-6" rx="17" ry="8.5" fill="url(#${id}f)"/><ellipse cx="-27" cy="-5" rx="10" ry="4.2" fill="#ffa3b5"/></g>
+    <g transform="rotate(30 24 -6)"><ellipse cx="26" cy="-6" rx="17" ry="8.5" fill="url(#${id}f)"/><ellipse cx="27" cy="-5" rx="10" ry="4.2" fill="#ffa3b5"/></g>
+    <path d="M-25 2 Q-27 -24 0 -24 Q27 -24 25 2 Q24 32 0 39 Q-24 32 -25 2 Z" fill="url(#${id}f)"/>
+    <ellipse cx="0" cy="22" rx="13" ry="10" fill="${muzzleC}" opacity=".9"/>
+    <path d="M-3.4 16.5 Q0 14.5 3.4 16.5 Q2 19.5 0 19.6 Q-2 19.5 -3.4 16.5Z" fill="${black ? '#b68f74' : '#1a181c'}"/>
+    <ellipse cx="-8" cy="-12" rx="7" ry="3" fill="#fff" opacity="${black ? 0.35 : 0.12}"/>
+    <g>
+      <circle cx="-14" cy="-20" r="11.5" fill="${edge}"/><circle cx="14" cy="-20" r="11.5" fill="${edge}"/><circle cx="0" cy="-26" r="12.5" fill="${edge}"/>
+      <circle cx="-14" cy="-21.5" r="11" fill="${W1}"/><circle cx="14" cy="-21.5" r="11" fill="${W1}"/><circle cx="0" cy="-27.5" r="12" fill="${W1}"/>
+      <circle cx="-4" cy="-31" r="4" fill="#fff" opacity=".6"/>
+    </g>
     ${eyes}
-    <ellipse cx="-16" cy="16" rx="5" ry="3" fill="#ff8fa3" opacity=".85"/>
-    <ellipse cx="16" cy="16" rx="5" ry="3" fill="#ff8fa3" opacity=".85"/>
+    <ellipse cx="-17" cy="15" rx="5.2" ry="3.2" fill="#ff8fa3" opacity=".7"/>
+    <ellipse cx="17" cy="15" rx="5.2" ry="3.2" fill="#ff8fa3" opacity=".7"/>
     ${mouth}
     ${acc}
   </g>
   ${sparkle}
 </svg>`;
+}
+function mixHex(a, b, t) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ch = (sh) => Math.round(((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t);
+  return '#' + [16, 8, 0].map((sh) => ch(sh).toString(16).padStart(2, '0')).join('');
 }
 
 function rollSheep(src) {
