@@ -1,6 +1,9 @@
 package com.minis.sheep;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Intent;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
@@ -118,6 +121,26 @@ public class MainActivity extends Activity {
             Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             if (v == null || !v.hasVibrator()) return;
             v.vibrate(VibrationEffect.createOneShot(Math.max(1, ms), VibrationEffect.DEFAULT_AMPLITUDE));
+        }
+
+        @JavascriptInterface
+        public void copy(String text) {
+            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("sheep", text));
+        }
+
+        @JavascriptInterface
+        public void share(String text) {
+            copy(text);
+            runOnUiThread(() -> {
+                Intent i = new Intent(Intent.ACTION_SEND);
+                i.setType("text/plain");
+                i.putExtra(Intent.EXTRA_TEXT, text);
+                try {
+                    startActivity(Intent.createChooser(i, "分享给好友"));
+                } catch (Exception ignored) {
+                }
+            });
         }
     }
 }

@@ -29,7 +29,7 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk out/SheepSheep-v1.0.${{ github.run_number }}.apk
+          cp app/build/outputs/apk/release/app-release.apk out/SheepSheep-v1.1.${{ github.run_number }}.apk
           ls -la out
 
       - uses: actions/upload-artifact@v4

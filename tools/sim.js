@@ -1,7 +1,7 @@
 const { levelConfig, generate, overlap } = window.__dbg;
 function play(level) {
   const cfg = levelConfig(level);
-  const tiles = generate(cfg).map((t) => ({ ...t }));
+  const tiles = generate(cfg, Math.floor(Math.random() * 1e9)).tiles;
   const slot = [];
   let removed = 0;
   const board = () => tiles.filter((t) => t.status === 'board');
@@ -29,6 +29,6 @@ const out = {};
 for (const lv of [1, 2, 3]) {
   let wins = 0, pct = 0, N = lv === 1 ? 20 : 40, cnt = 0;
   for (let i = 0; i < N; i++) { const r = play(lv); wins += r.win ? 1 : 0; pct += r.pct; }
-  out['L' + lv] = { winRate: wins / N, avgProgress: +(pct / N).toFixed(3), tiles: generate(levelConfig(lv)).length };
+  out['L' + lv] = { winRate: wins / N, avgProgress: +(pct / N).toFixed(3), tiles: generate(levelConfig(lv), 1).tiles.length };
 }
 return out;

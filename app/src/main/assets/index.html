@@ -10,25 +10,55 @@
 <canvas id="game"></canvas>
 <div id="safe-probe"></div>
 
-<!-- 首页 -->
-<div id="menu" class="screen show">
-  <div class="clouds"><i></i><i></i><i></i></div>
+<!-- ============ 首页 ============ -->
+<div id="menu" class="screen scene show">
+  <div class="sun"><i></i></div>
+  <div class="clouds"><i></i><i></i><i></i><i></i></div>
+  <div class="hills"><b class="h1"></b><b class="h2"></b><b class="h3"></b></div>
+  <div class="meadow-flowers"></div>
   <div class="title-wrap">
     <div class="title"><span>羊</span><span>了</span><span>个</span><span>羊</span></div>
     <div class="subtitle">复 刻 版</div>
   </div>
   <div class="sheep-stage">
-    <div class="sheep bob" data-sheep></div>
+    <div class="menu-flock" id="menu-flock"></div>
+    <div class="sheep bob hero" data-sheep></div>
   </div>
   <div class="menu-btns">
     <button class="btn btn-green big" id="btn-start">开始游戏</button>
-    <button class="btn btn-blue" id="btn-levels">选择关卡</button>
+    <button class="btn btn-orange daily" id="btn-daily">
+      <span class="daily-main">🏆 今日挑战</span><small id="daily-sub"></small>
+    </button>
+    <div class="mini-row">
+      <button class="mini" id="btn-pen"><i>🐑</i><span>羊圈</span><em id="pen-badge"></em></button>
+      <button class="mini" id="btn-levels"><i>🗺️</i><span>关卡</span></button>
+      <button class="mini" id="btn-code"><i>🔑</i><span>关卡码</span></button>
+    </div>
   </div>
   <div class="stats" id="stats"></div>
   <button class="icon-btn sound-btn" id="btn-sound" aria-label="声音">🔊</button>
 </div>
 
-<!-- 选关 -->
+<!-- ============ 羊圈 ============ -->
+<div id="pen" class="screen pen">
+  <div class="pen-head">
+    <button class="icon-btn pen-back" id="pen-back">‹</button>
+    <div class="pen-title">我的羊圈</div>
+    <div class="pen-count" id="pen-count"></div>
+  </div>
+  <div class="pen-rarity" id="pen-rarity"></div>
+  <div class="pen-field" id="pen-field"></div>
+  <div class="pen-tip" id="pen-tip">点点小羊，看看它是谁～</div>
+  <div class="sheep-card" id="sheep-card">
+    <div class="card-rays"></div>
+    <div class="card-sheep" id="card-sheep"></div>
+    <div class="card-name" id="card-name"></div>
+    <div class="card-rar" id="card-rar"></div>
+    <div class="card-desc" id="card-desc"></div>
+  </div>
+</div>
+
+<!-- ============ 弹窗 ============ -->
 <div id="levels" class="modal">
   <div class="panel">
     <div class="panel-title">选择关卡</div>
@@ -37,42 +67,83 @@
   </div>
 </div>
 
-<!-- 暂停 -->
+<div id="code" class="modal top">
+  <div class="panel">
+    <div class="panel-title">输入关卡码</div>
+    <div class="panel-text">和朋友输入同一个关卡码，<br>就能玩到一模一样的牌局</div>
+    <input id="code-input" class="code-input" maxlength="12" placeholder="例如 2-K7Q3MZ" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="btn btn-green" id="btn-code-go">开始挑战</button>
+    <button class="btn btn-gray" data-close>取消</button>
+  </div>
+</div>
+
 <div id="pause" class="modal">
   <div class="panel">
     <div class="panel-title">暂停</div>
+    <div class="code-row"><span>关卡码</span><b class="code-val"></b><button class="chip" data-copy>复制</button><button class="chip" data-share>分享</button></div>
     <button class="btn btn-green" id="btn-resume">继续游戏</button>
-    <button class="btn btn-blue" id="btn-restart">重新开始</button>
+    <button class="btn btn-blue" id="btn-restart">重试本局</button>
     <button class="btn btn-blue" id="btn-sound2">声音：开</button>
     <button class="btn btn-gray" id="btn-home">返回首页</button>
   </div>
 </div>
 
-<!-- 失败 -->
 <div id="fail" class="modal">
   <div class="panel">
     <div class="panel-title red">槽位已满！</div>
-    <div class="sheep sad" data-sheep></div>
-    <div class="panel-text" id="fail-text">差一点就过了，再试一次吧</div>
+    <div class="sheep sad" data-sheep="sad"></div>
+    <div class="panel-text" id="fail-text"></div>
     <button class="btn btn-green" id="btn-revive">复活一次（移出 3 张）</button>
-    <button class="btn btn-blue" id="btn-retry">重新挑战</button>
-    <button class="btn btn-gray" id="btn-home2">返回首页</button>
+    <button class="btn btn-purple" id="btn-solution">🎬 看看正解</button>
+    <button class="btn btn-blue" id="btn-retry">重试本局</button>
+    <div class="btn-row">
+      <button class="btn btn-gray small" id="btn-newgame">换一局</button>
+      <button class="btn btn-gray small" id="btn-home2">返回首页</button>
+    </div>
+    <div class="code-row"><span>关卡码</span><b class="code-val"></b><button class="chip" data-copy>复制</button></div>
   </div>
 </div>
 
-<!-- 胜利 -->
-<div id="win" class="modal">
+<div id="win" class="modal light">
   <div class="panel">
     <div class="panel-title gold" id="win-title">恭喜通关！</div>
-    <div class="flock" id="flock"></div>
+    <div class="reveal" id="reveal">
+      <div class="reveal-rays"></div>
+      <div class="reveal-sheep" id="reveal-sheep"></div>
+    </div>
+    <div class="reveal-info" id="reveal-info"></div>
     <div class="panel-text" id="win-text"></div>
     <button class="btn btn-green" id="btn-next">下一关</button>
-    <button class="btn btn-gray" id="btn-home3">返回首页</button>
+    <div class="btn-row">
+      <button class="btn btn-blue small" id="btn-share-win">分享战绩</button>
+      <button class="btn btn-gray small" id="btn-home3">返回首页</button>
+    </div>
   </div>
+</div>
+
+<div id="replay-end" class="modal">
+  <div class="panel">
+    <div class="panel-title">回放结束</div>
+    <div class="panel-text" id="replay-text">这就是这副牌的一条通关路线！<br>看过答案的牌局再通关不会获得小羊哦</div>
+    <button class="btn btn-green" id="btn-replay-retry">我来试试（同一局）</button>
+    <button class="btn btn-blue" id="btn-replay-again">再看一遍</button>
+    <button class="btn btn-gray" id="btn-home4">返回首页</button>
+  </div>
+</div>
+
+<!-- 回放 HUD -->
+<div id="replay-hud">
+  <span class="rec">● 正解回放</span><b id="replay-step">0/0</b>
+  <button class="chip" id="replay-speed">1×</button>
+  <button class="chip" id="replay-exit">退出</button>
 </div>
 
 <div id="toast"></div>
 
+<script src="core.js"></script>
+<script src="sheep.js"></script>
+<script src="level.js"></script>
 <script src="game.js"></script>
+<script src="ui.js"></script>
 </body>
 </html>
