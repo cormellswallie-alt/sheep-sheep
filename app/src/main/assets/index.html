@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>羊了个羊·复刻</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="safe-probe"></div>
+
+<!-- 首页 -->
+<div id="menu" class="screen show">
+  <div class="clouds"><i></i><i></i><i></i></div>
+  <div class="title-wrap">
+    <div class="title"><span>羊</span><span>了</span><span>个</span><span>羊</span></div>
+    <div class="subtitle">复 刻 版</div>
+  </div>
+  <div class="sheep-stage">
+    <div class="sheep bob" data-sheep></div>
+  </div>
+  <div class="menu-btns">
+    <button class="btn btn-green big" id="btn-start">开始游戏</button>
+    <button class="btn btn-blue" id="btn-levels">选择关卡</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <button class="icon-btn sound-btn" id="btn-sound" aria-label="声音">🔊</button>
+</div>
+
+<!-- 选关 -->
+<div id="levels" class="modal">
+  <div class="panel">
+    <div class="panel-title">选择关卡</div>
+    <div class="level-grid" id="level-grid"></div>
+    <button class="btn btn-gray" data-close>返回</button>
+  </div>
+</div>
+
+<!-- 暂停 -->
+<div id="pause" class="modal">
+  <div class="panel">
+    <div class="panel-title">暂停</div>
+    <button class="btn btn-green" id="btn-resume">继续游戏</button>
+    <button class="btn btn-blue" id="btn-restart">重新开始</button>
+    <button class="btn btn-blue" id="btn-sound2">声音：开</button>
+    <button class="btn btn-gray" id="btn-home">返回首页</button>
+  </div>
+</div>
+
+<!-- 失败 -->
+<div id="fail" class="modal">
+  <div class="panel">
+    <div class="panel-title red">槽位已满！</div>
+    <div class="sheep sad" data-sheep></div>
+    <div class="panel-text" id="fail-text">差一点就过了，再试一次吧</div>
+    <button class="btn btn-green" id="btn-revive">复活一次（移出 3 张）</button>
+    <button class="btn btn-blue" id="btn-retry">重新挑战</button>
+    <button class="btn btn-gray" id="btn-home2">返回首页</button>
+  </div>
+</div>
+
+<!-- 胜利 -->
+<div id="win" class="modal">
+  <div class="panel">
+    <div class="panel-title gold" id="win-title">恭喜通关！</div>
+    <div class="flock" id="flock"></div>
+    <div class="panel-text" id="win-text"></div>
+    <button class="btn btn-green" id="btn-next">下一关</button>
+    <button class="btn btn-gray" id="btn-home3">返回首页</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="game.js"></script>
+</body>
+</html>
